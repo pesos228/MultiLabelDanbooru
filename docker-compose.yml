@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  tagger_app:
+    build: .
+    image: danbooru_tagger # Назовите ваш образ
+    command: [ # Команда для запуска
+      "--model_name", "resnet34",
+      "--data_csv", "/data/metadata.csv", # Путь ВНУТРИ контейнера
+      "--img_root", "/data/danbooru_images/", # Путь ВНУТРИ контейнера
+      "--output_dir", "/app/experiments", # Путь ВНУТРИ контейнера
+      "--epochs", "2",
+      "--batch_size", "4", # Маленький для локального теста
+      "--top_k_tags", "50",
+      "--use_amp"
+    ]
+    volumes:
+      - ./data:/data # Монтируем вашу локальную папку data в /data контейнера
+      - ./experiments:/app/experiments # Монтируем локальную папку experiments
+    deploy: # Требуется для доступа к GPU
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # или 'all'
+              capabilities: [gpu]
+    # Если нужен интерактивный режим для отладки:
+    # stdin_open: true
+    # tty: true

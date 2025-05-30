@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# IDE-специфичные папки
+.idea/
+.vscode/
+
+# Локальное виртуальное окружение
+venv/
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Docker-специфичные файлы, не нужные в образе
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Локальные данные и результаты (они будут монтироваться)
+data/
+experiments/
+
+# Скрипты сборки/тестирования, не нужные в образе
+*.bat
+*.ps1
+quick_test.bat
+test_single_model.bat
+train_all_models.bat
+check_system.bat
+# И другие подобные...
+
+# Логи и временные файлы
+*.log
+*.tmp
+gpu_training_pipeline_*.txt
+training_pipeline__* # Если это временный файл
+
+# Старые файлы
+requirementsOld.txt
+
+# Другое
+README.md # Если не хотите его в образе
+# notebooks/ # Если у вас есть папка с ноутбуками и они не нужны в образе
