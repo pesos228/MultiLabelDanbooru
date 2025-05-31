@@ -181,7 +181,7 @@ def get_available_models() -> list:
         "resnet34", "resnet50", 
         
         # EfficientNet family (V2 - latest)
-        "efficientnet_b0", "efficientnet_b1", "efficientnet_b2", "efficientnet_b3",
+        "efficientnet_b0", "efficientnet_b1", "efficientnet_b2", "efficientnet_b3", "efficientnet_s",
         
         # ConvNeXt (V2 - latest)
         "convnext_tiny", "convnext_small",
