@@ -54,11 +54,22 @@ def get_model(model_name: str, num_classes: int, **kwargs) -> nn.Module:
     elif model_name == "efficientnet_b3":
         model = timm.create_model('tf_efficientnetv2_b3', pretrained=False, num_classes=num_classes)
         logger.info("Using EfficientNet-V2 B3 (latest)")
+
+    elif model_name == "efficientnet_s":
+        model = timm.create_model('tf_efficientnetv2_s', pretrained=False, num_classes=num_classes)
+        logger.info("Using EfficientNet-V2 S (latest)")
         
-    # ConvNeXt - V2 версия
     elif model_name == "convnext_tiny":
-        model = timm.create_model('convnextv2_tiny.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
-        logger.info("Using ConvNeXt-V2 Tiny (latest)")
+        try:
+            model = timm.create_model('convnextv2_tiny.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
+            print("✅ Using ConvNeXt-V2 Tiny")
+        except:
+            try:
+                model = timm.create_model('convnextv2_tiny', pretrained=False, num_classes=num_classes)
+                print("✅ Using ConvNeXt-V2 Tiny (basic)")
+            except:
+                model = timm.create_model('convnext_tiny', pretrained=False, num_classes=num_classes)
+                print("⚠️ Fallback to ConvNeXt-V1 Tiny")
         
     elif model_name == "convnext_small":
         model = timm.create_model('convnextv2_small.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
