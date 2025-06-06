@@ -54,11 +54,27 @@ def get_model(model_name: str, num_classes: int, **kwargs) -> nn.Module:
     elif model_name == "efficientnet_b3":
         model = timm.create_model('tf_efficientnetv2_b3', pretrained=False, num_classes=num_classes)
         logger.info("Using EfficientNet-V2 B3 (latest)")
+
+    elif model_name == "efficientnet_s":
+        model = timm.create_model('tf_efficientnetv2_s', pretrained=False, num_classes=num_classes)
+        logger.info("Using EfficientNet-V2 S (latest)")
+    
+    elif model_name == "efficientnet_m":
+        model = timm.create_model('tf_efficientnetv2_m', pretrained=False, num_classes=num_classes)
+        logger.info("Using EfficientNet-V2 M (latest)")
+
         
-    # ConvNeXt - V2 версия
     elif model_name == "convnext_tiny":
-        model = timm.create_model('convnextv2_tiny.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
-        logger.info("Using ConvNeXt-V2 Tiny (latest)")
+        try:
+            model = timm.create_model('convnextv2_tiny.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
+            print("✅ Using ConvNeXt-V2 Tiny")
+        except:
+            try:
+                model = timm.create_model('convnextv2_tiny', pretrained=False, num_classes=num_classes)
+                print("✅ Using ConvNeXt-V2 Tiny (basic)")
+            except:
+                model = timm.create_model('convnext_tiny', pretrained=False, num_classes=num_classes)
+                print("⚠️ Fallback to ConvNeXt-V1 Tiny")
         
     elif model_name == "convnext_small":
         model = timm.create_model('convnextv2_small.fcmae_ft_in22k_in1k', pretrained=False, num_classes=num_classes)
@@ -170,7 +186,7 @@ def get_available_models() -> list:
         "resnet34", "resnet50", 
         
         # EfficientNet family (V2 - latest)
-        "efficientnet_b0", "efficientnet_b1", "efficientnet_b2", "efficientnet_b3",
+        "efficientnet_b0", "efficientnet_b1", "efficientnet_b2", "efficientnet_b3", "efficientnet_s", "efficientnet_m",
         
         # ConvNeXt (V2 - latest)
         "convnext_tiny", "convnext_small",
@@ -194,6 +210,9 @@ def print_model_info():
     print("🚀 LATEST MODEL VERSIONS USED:")
     print("="*50)
     print("EfficientNet → EfficientNet-V2 (2021, improved training)")
+    print("  ├─ B0, B1, B2, B3 variants")
+    print("  ├─ S (Small) variant")
+    print("  └─ M (Medium) variant ⭐ NEW")
     print("ConvNeXt → ConvNeXt-V2 (2023, better performance)")  
     print("Swin → Swin-V2 (2022, improved architecture)")
     print("ViT → DeiT-III (2022, latest distillation)")
