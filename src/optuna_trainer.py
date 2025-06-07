@@ -58,13 +58,13 @@ class OptunaTrainer:
             # ===========================================
             
             # Learning rate (log scale)
-            lr = trial.suggest_float('learning_rate', 1e-5, 5e-3, log=True)
+            lr = trial.suggest_float('learning_rate', 3e-4, 1e-3, log=True)
             
             # Weight decay (log scale) 
-            weight_decay = trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True)
+            weight_decay = trial.suggest_float('weight_decay', 1e-2, 4e-2, log=True)
             
             # Batch size (discrete values)
-            batch_size = trial.suggest_categorical('batch_size', [96, 128, 160, 192, 224])
+            batch_size = trial.suggest_categorical('batch_size', [96, 128, 160, 192])
             
             # Optimizer
             optimizer_name = trial.suggest_categorical('optimizer_name', ['adamw', 'sgd'])
@@ -279,6 +279,21 @@ class OptunaTrainer:
                     scheduler.step(val_metrics['macro_f1'])
                 
                 current_f1 = val_metrics['macro_f1']
+
+                #CUSTOM FROM EfficientNetV2_S_4090_bs96_is384_35ep_20250531_103843
+
+                if epoch >= 6 and current_f1 < 0.03:
+                    trial_logger.info(f"Early stopping - F1 too low after {epoch} epochs: {current_f1:.4f}")
+                    break
+                
+                if epoch >= 8 and current_f1 < 0.06:
+                    trial_logger.info(f"Early stopping - F1 too low after {epoch} epochs: {current_f1:.4f}")
+                    break
+
+                if epoch >= 12 and current_f1 < 0.08:
+                    trial_logger.info(f"Early stopping - F1 too low after {epoch} epochs: {current_f1:.4f} (expected >0.08)")
+                    break
+
                 epoch_end_time = datetime.now()
                 epoch_duration = epoch_end_time - epoch_start_time
                 
