@@ -64,7 +64,7 @@ class OptunaTrainer:
             weight_decay = trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True)
             
             # Batch size (discrete values)
-            batch_size = trial.suggest_categorical('batch_size', [16, 24, 32, 48, 64])
+            batch_size = trial.suggest_categorical('batch_size', [96, 128, 160, 192, 224])
             
             # Optimizer
             optimizer_name = trial.suggest_categorical('optimizer_name', ['adamw', 'sgd'])
