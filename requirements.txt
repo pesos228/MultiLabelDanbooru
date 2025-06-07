@@ -16,3 +16,5 @@ requests>=2.32.0
 lightning-utilities>=0.11.0 # Опционально, если используется
 # huggingface-hub # Опционально, если используется
 # safetensors # Опционально, если используется
+
+optuna>=4.3.0
