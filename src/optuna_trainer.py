@@ -220,7 +220,6 @@ class OptunaTrainer:
                     mode='max',
                     factor=0.5,
                     patience=2,
-                    verbose=True
                 )
                 scheduler_info = "ReduceLROnPlateau(mode=max, factor=0.5, patience=2)"
             
