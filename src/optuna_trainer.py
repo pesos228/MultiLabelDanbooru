@@ -16,8 +16,9 @@ from torch.utils.data import DataLoader
 # Import your existing modules
 from dataset import create_train_val_datasets
 from models import get_model
-from engine import train_one_epoch, evaluate, create_amp_scaler
+from engine import train_one_epoch, evaluate
 from utils import set_seed, force_gpu_usage, setup_logging, count_parameters
+from main_train import create_amp_scaler
 
 logger = logging.getLogger(__name__)
 
