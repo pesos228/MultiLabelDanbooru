@@ -23,8 +23,9 @@ from main_train import create_amp_scaler
 logger = logging.getLogger(__name__)
 
 class OptunaTrainer:
-    def __init__(self, args):
+    def __init__(self, args, experiment_dir):
         self.args = args
+        self.experiment_dir = Path(experiment_dir)
         self.device = force_gpu_usage()
         
         # Создаем датасеты один раз (экономим время)
@@ -44,7 +45,7 @@ class OptunaTrainer:
         logger.info(f"Dataset ready. Classes: {self.num_classes}")
         
         # Создаем папку для сохранения результатов каждого trial
-        self.trials_dir = Path(args.output_dir) / "trials"
+        self.trials_dir = self.experiment_dir / "trials"
         self.trials_dir.mkdir(parents=True, exist_ok=True)
         
     def objective(self, trial):
@@ -592,8 +593,10 @@ def get_args():
                         help='Custom study name')
     
     # Output directory
-    parser.add_argument('--output_dir', type=str, required=True,
-                        help='Directory to save all results')
+    parser.add_argument('--output_dir', type=str, default='./experiments',
+                        help='Directory to save results')
+    parser.add_argument('--experiment_name', type=str, default=None,
+                        help='Experiment name')
     
     return parser.parse_args()
 
@@ -604,24 +607,40 @@ def main():
     # Set seed
     set_seed(args.seed)
     
-    # Create output directory structure
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Create experiment name with timestamp - КАК В MAIN.PY
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if args.experiment_name is None:
+        experiment_name = f"optuna_{args.model_name}_{timestamp}"
+    else:
+        experiment_name = f"{args.experiment_name}_{timestamp}"
+    
+    # Create experiment directory - КАК В MAIN.PY
+    experiment_dir = Path(args.output_dir) / experiment_name
+    experiment_dir.mkdir(parents=True, exist_ok=True)
     
     # Setup logging
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = output_dir / f'optuna_main_{timestamp}.log'
+    log_file = experiment_dir / 'optuna_optimization.log'
     setup_logging(log_file)
     
     logger.info("="*80)
     logger.info("OPTUNA HYPERPARAMETER OPTIMIZATION")
+    logger.info(f"Experiment: {experiment_name}")
+    logger.info(f"Experiment directory: {experiment_dir}")
     logger.info(f"Model: {args.model_name}")
     logger.info(f"Trials: {args.n_trials}")
     logger.info(f"Epochs per trial: {args.epochs}")
-    logger.info(f"Output directory: {output_dir}")
     logger.info(f"Data CSV: {args.data_csv}")
     logger.info(f"Images root: {args.img_root}")
     logger.info("="*80)
+    
+    # Save configuration - КАК В MAIN.PY
+    config_dict = vars(args).copy()
+    config_dict['experiment_name'] = experiment_name
+    config_dict['experiment_dir'] = str(experiment_dir)
+    config_dict['pytorch_version'] = torch.__version__
+    
+    with open(experiment_dir / 'config.json', 'w') as f:
+        json.dump(config_dict, f, indent=2)
     
     # Determine study name
     if args.study_name is None:
@@ -629,21 +648,8 @@ def main():
     else:
         study_name = f"{args.study_name}_{timestamp}"
     
-    # Save experiment configuration
-    experiment_config = {
-        'study_name': study_name,
-        'timestamp': timestamp,
-        'args': vars(args),
-        'pytorch_version': torch.__version__,
-        'start_time': datetime.now().isoformat()
-    }
-    
-    with open(output_dir / 'experiment_config.json', 'w') as f:
-        json.dump(experiment_config, f, indent=2)
-    
-    # Database path for persistence
-    db_path = output_dir / f"{study_name}.db"
-    
+    # Database path for persistence - В ПАПКЕ ЭКСПЕРИМЕНТА
+    db_path = experiment_dir / f"{study_name}.db"
     logger.info(f"Study name: {study_name}")
     logger.info(f"Database: {db_path}")
     
@@ -663,8 +669,8 @@ def main():
     
     logger.info("Created Optuna study with HyperbandPruner + TPESampler")
     
-    # Create trainer
-    trainer = OptunaTrainer(args)
+    # Create trainer - ПЕРЕДАЕМ experiment_dir
+    trainer = OptunaTrainer(args, experiment_dir)
     
     # Start optimization
     optimization_start_time = datetime.now()
@@ -677,7 +683,7 @@ def main():
             show_progress_bar=True,
             callbacks=[
                 # Сохранение промежуточных результатов каждые 5 trials
-                lambda study, trial: save_intermediate_results(study, output_dir) if trial.number % 5 == 0 else None
+                lambda study, trial: save_intermediate_results(study, experiment_dir) if trial.number % 5 == 0 else None
             ]
         )
         
@@ -763,7 +769,7 @@ def main():
         }
         
         # Save comprehensive results
-        comprehensive_file = output_dir / f"{study_name}_comprehensive_results.json"
+        comprehensive_file = experiment_dir / f"{study_name}_comprehensive_results.json"
         with open(comprehensive_file, 'w') as f:
             json.dump(comprehensive_results, f, indent=2, default=str)
         
@@ -784,12 +790,12 @@ def main():
             }
             all_trials_details.append(trial_detail)
         
-        trials_file = output_dir / f"{study_name}_all_trials.json"
+        trials_file = experiment_dir / f"{study_name}_all_trials.json"
         with open(trials_file, 'w') as f:
             json.dump(all_trials_details, f, indent=2, default=str)
         
         # Save best hyperparameters in easy-to-use format
-        best_params_file = output_dir / f"{study_name}_best_hyperparameters.json" 
+        best_params_file = experiment_dir / f"{study_name}_best_hyperparameters.json" 
         best_params_formatted = {
             'best_macro_f1': float(best_value),
             'best_trial_number': best_trial.number,
@@ -808,7 +814,7 @@ def main():
             json.dump(best_params_formatted, f, indent=2)
         
         # Final logging
-        logger.info(f"Results saved to {output_dir}")
+        logger.info(f"Results saved to {experiment_dir}")
         logger.info(f"- Comprehensive results: {comprehensive_file}")
         logger.info(f"- All trials details: {trials_file}")
         logger.info(f"- Best hyperparameters: {best_params_file}")
@@ -859,7 +865,7 @@ def main():
                 'partial_duration_seconds': (optimization_end_time - optimization_start_time).total_seconds()
             }
             
-            partial_file = output_dir / f"{study_name}_partial_results.json" 
+            partial_file = experiment_dir / f"{study_name}_partial_results.json" 
             with open(partial_file, 'w') as f:
                 json.dump(partial_results, f, indent=2)
             
