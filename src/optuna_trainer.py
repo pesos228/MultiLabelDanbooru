@@ -668,7 +668,18 @@ def main():
     
     # Determine study name
     if args.study_name is None:
-        study_name = f"{args.model_name}_optuna_{timestamp}"
+        if args.resume_from_dir:
+            # При восстановлении - ищем existing базу по паттерну, берем самую старую (с данными)
+            existing_dbs = sorted(list(experiment_dir.glob("*.db")))
+            if existing_dbs:
+                # Берем первую (самую старую базу)
+                study_name = existing_dbs[0].stem
+                logger.info(f"Found existing database: {existing_dbs[0].name}")
+            else:
+                study_name = f"{args.model_name}_optuna_{timestamp}"
+                logger.info("No existing database found, creating new")
+        else:
+            study_name = f"{args.experiment_name}_{timestamp}" if args.experiment_name else f"{args.model_name}_optuna_{timestamp}"
     else:
         study_name = f"{args.study_name}_{timestamp}"
     
