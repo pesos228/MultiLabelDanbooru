@@ -499,7 +499,7 @@ class OptunaTrainer:
                     'trial_number': trial_number,
                     'status': 'pruned',
                     'last_epoch': len(train_history) if 'train_history' in locals() else 0,
-                    'last_f1': train_history[-1]['macro_f1'] if 'train_history' in locals() and train_history else 0.0,
+                    'last_f1': val_history[-1]['macro_f1'] if 'val_history' in locals() and val_history else 0.0,
                     'hyperparameters': trial_config['hyperparameters'] if 'trial_config' in locals() else {},
                     'pruned_at': trial_end_time.isoformat(),
                     'duration_seconds': (trial_end_time - trial_start_time).total_seconds()
@@ -611,6 +611,8 @@ def get_args():
                         help='Directory to save results')
     parser.add_argument('--experiment_name', type=str, default=None,
                         help='Experiment name')
+    parser.add_argument('--resume_from_dir', type=str, default=None,
+                   help='Resume from existing experiment directory')
     
     return parser.parse_args()
 
@@ -620,17 +622,25 @@ def main():
     
     # Set seed
     set_seed(args.seed)
-    
-    # Create experiment name with timestamp - КАК В MAIN.PY
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    if args.experiment_name is None:
-        experiment_name = f"optuna_{args.model_name}_{timestamp}"
+
+    if args.resume_from_dir:
+        experiment_dir = Path(args.resume_from_dir)
+        if not experiment_dir.exists():
+            logger.error(f"Resume directory not found: {experiment_dir}")
+            exit(1)
+        experiment_name = experiment_dir.name
+        try:
+            timestamp = experiment_dir.name.split('_')[-1]
+        except IndexError:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     else:
-        experiment_name = f"{args.experiment_name}_{timestamp}"
-    
-    # Create experiment directory - КАК В MAIN.PY
-    experiment_dir = Path(args.output_dir) / experiment_name
-    experiment_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if args.experiment_name is None:
+            experiment_name = f"optuna_{args.model_name}_{timestamp}"
+        else:
+            experiment_name = f"{args.experiment_name}_{timestamp}"
+        experiment_dir = Path(args.output_dir) / experiment_name
+        experiment_dir.mkdir(parents=True, exist_ok=True)
     
     # Setup logging
     log_file = experiment_dir / 'optuna_optimization.log'
